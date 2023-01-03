@@ -1,0 +1,38 @@
+#!/bin/sh
+
+## This script checks for an installed Application (in this case, Adobe Acrobat) and the last time it was used. If the
+## Application has been used within 31 days, the "Keep" message is produced. If it's been longer than 31 days, the
+## "Revoke" message is produced. This is meant to be used for license evaluation purposes and DOES NOT impact the
+## installed Application.
+
+## It may be necessary to run this script as the logged in User. To do so, uncomment the following code:
+## sudo -u $(stat -f "%Su" /dev/console) /bin/sh <<'END'
+
+## Checks the device for the Application "Adobe Acrobat.app" and runs the usage script if found. Otherwise, exits.
+function adobe_check {
+  adobe_installed=$(ls /Applications/"Adobe Acrobat DC" | grep "Adobe Acrobat.app")
+  echo "Checking for Adobe Acrobat application"
+  if [[ $adobe_installed == "Adobe Acrobat.app" ]]; then
+      echo "Adobe Acrobat installed on device"
+      echo "$(use_check)"
+    else
+      echo "Adobe not installed on device"
+      exit 0
+fi
+}
+
+## Pulls the last used date for the Application and compares it to a timestamp of 31 days ago. If earlier, "Keep" is
+## produced and if less, "Revoke" is produced.
+function use_check {
+  last_use=$(mdls -n kMDItemLastUsedDate "/Applications/Adobe Acrobat DC/Adobe Acrobat.app" | awk '{print $3,$4}' | date "+%s")
+  last_month=$(date -v-1m "+%s")
+  if [[ "$last_use-$last_month >= 2678400" ]]; then
+    echo "Keep - application used less than a month ago"
+    exit 0
+  else
+    echo "Revoke - application last used more than a month ago."
+    exit 0
+fi
+}
+
+adobe_check

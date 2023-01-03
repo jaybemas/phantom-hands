@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# This script elevates a local Standard account to an Administrator role. It then waits 24 hours (86400 seconds) before
+# demoting the account back to a Standard role.
+
+# Input the local account's name here. This can be found in Mosyle MDM within the device's information pane.
+username="testuser"
+
+# Adds the User account to the local admin Group then checks the Group's membership to confirm success and alerts the User.
+function elevate_user {
+  echo "Elevating $username to Administrator."
+  sudo dseditgroup -o edit -a $username -t user admin
+  elevated_check=$(dseditgroup -o checkmember -m $username admin | grep "yes")
+  echo "Checking for Administrator status."
+  if [[ $elevated_check == "yes $username is a member of admin" ]]; then
+    echo "$username is currently an Administrator."
+    osascript -e 'display alert "Account Elevated" message "Your account has been elevated to Administrator.\r This will be revoked in 24 hours."'
+  else
+    echo "$username is not an Administrator, please try again."
+  fi
+  }
+
+# Removes the User account from the local admin Group then checks the Group's membership to confirm success and alerts the User.
+function demote_user {
+  sudo dseditgroup -o edit -d $username -t user admin
+  demoted_check=$(dseditgroup -o checkmember -m $username admin | grep "no")
+  echo "Checking for Administrator removal."
+  if [[ $demoted_check == "no $username is NOT a member of admin" ]]; then
+    echo "$username is not currently an Administrator"
+    osascript -e 'display alert "Account Demoted" message "Your account has been demoted back to Standard.\r If you need additional time as an Administrator, please reach out to ithelpdesk@nomadhealth.com."'
+  else
+    echo "$username is still an Administrator, please try again"
+  fi
+}
+
+#
+echo "$(elevate_user)"
+
+sleep 86400
+
+echo "$(demote_user)"
+
+
+
+

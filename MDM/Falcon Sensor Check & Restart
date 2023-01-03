@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# This script checks the list of currently running processes for the Falcon Sensor agent.
+# If the process is not running, the Falcon application is opened and the User recieves a prompt to restart the device.
+# This prompt appears as a system warning.
+
+# Searches for the Falcon Sensor agent among currently running processes.
+function falcon_check {
+	falcon_status=$(pgrep -x com.crowdstrike.falcon.Agent | echo $?)
+	echo "Looking for Falcon Sensor"
+	if [[ $falcon_status == "0" ]]; then
+		echo "Falcon Sensor is running"
+		exit 0
+	else
+		echo "Falcon Sensor is not running"
+    sudo open -a Falcon.app
+    echo "$(restart_prompt)"
+	fi
+}
+
+# Prompts the User to restart the device in the form of a system warning.
+function restart_prompt {
+	echo "Status: Restart required"
+	osascript -e 'display alert "Critical Error 33" message "Please save your current work and restart your device when convenient.\n\n Seeing this multiple times? Reach out at ithelpdesk@nomadhealth.com"'
+	exit 0
+}
+
+# Run program and associated functions.
+echo "$(falcon_check)"
