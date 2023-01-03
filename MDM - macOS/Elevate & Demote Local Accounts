@@ -3,7 +3,7 @@
 # This script elevates a local Standard account to an Administrator role. It then waits 24 hours (86400 seconds) before
 # demoting the account back to a Standard role.
 
-# Input the local account's name here. This can be found in Mosyle MDM within the device's information pane.
+# Input the local account's name here. This can be found in Mosyle MDM - macOS within the device's information pane.
 username="testuser"
 
 # Adds the User account to the local admin Group then checks the Group's membership to confirm success and alerts the User.

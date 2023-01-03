@@ -7,7 +7,7 @@
 
 
 # Checks if the device is enrolled in DEP and reports or advances the script.
-# Replace "Self-Service" with the local application name of the MDM provider.
+# Replace "Self-Service" with the local application name of the MDM - macOS provider.
 function check_enrollment {
 	enroll_status=$(profiles status -type enrollment | grep "Enrolled via DEP:")
 	echo "Status: Checking device enrollment"
@@ -24,7 +24,7 @@ function check_enrollment {
 
 # Checks the expiration of certificates in the local keychain and deletes the file if expirations are found.
 # Also kicks off DEP renewal.
-# Replace "Self-Service" with the local application name of the MDM provider.
+# Replace "Self-Service" with the local application name of the MDM - macOS provider.
 function check_expiration {
 	keychain="/Library/Keychains/apsd.keychain"
 	cert=$(/usr/bin/security find-certificate -p -Z $keychain | /usr/bin/openssl x509 -noout -enddate | cut -f2 -d=)
@@ -55,7 +55,7 @@ function enroll_in_dep {
 }
 
 # Verifies enrollment and returns results.
-# Replace "Self-Service" with the local application name of the MDM provider.
+# Replace "Self-Service" with the local application name of the MDM - macOS provider.
 function verify_enrollment {
 	enroll_status=$(profiles status -type enrollment | grep "Enrolled via DEP:")
 	echo "Status: Verifying enrollment"
