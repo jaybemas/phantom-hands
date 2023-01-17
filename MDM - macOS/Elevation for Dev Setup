@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# This script is helpful when local accounts lack Administrator rights but need to be elevated to complete a dev setup.
+# It checks if the logged in User has certain directories created, which is often the last step in a dev setup (cloning repos).
+# If the directories don't exist, the account is made an Administrator for 24hrs. If they do, nothing happens.
+
+# Commits the logged in User as the variable "user"
+user=$(stat -f "%Su" /dev/console)
+
+# The directories created during the installation process. Assumption is their creation is the final step so should indicate a complete install.
+directories=("/Users/$user/dev/work/prime" "/Users/$user/dev/work/secondary" "/Users/$user/dev/work/backup") # Example directories
+
+# Checks for the directories and adds the missing directories to a string variable.
+state=$(for dir in ${directories[@]}; do
+  if [ ! -d "$dir" ]; then
+      echo "\n $dir"
+    else
+      continue
+fi
+done
+)
+
+function config_check {
+  if [[ -n "$state" ]]; then # This checks if the "state" variable has a result. If it does, the script continues.
+    echo "Elevating $user to Administrator."
+    sudo dseditgroup -o edit -a $user -t user admin
+    admin_check
+    sleep 86400 # This is a delay of 24 hours
+    demote_user
+  else
+    echo "Directories found & installation complete."
+    sudo dseditgroup -o edit -d $user -t user admin # Attempts to demote the User if they're an Administrator.
+    exit 0
+fi
+}
+
+function admin_check {
+  echo "Checking for Administrator status."
+  elevated_check=$(dseditgroup -o checkmember -m $user admin | grep "yes")
+    if [[ $elevated_check == "yes $user is a member of admin" ]]; then
+      echo "$user is currently an Administrator."
+      osascript -e 'display alert "Setup Required" message "The following directories are missing from your configuration:\n '"${state//\"/}"' \n\n To complete the setup of your local environment, your account has been elevated to Administrator.\r \n\n This will be revoked in 24 hours."'
+    else
+    echo "$user is not an Administrator, please try again."
+fi
+}
+
+function demote_user {
+  sudo dseditgroup -o edit -d $user -t user admin
+  demoted_check=$(dseditgroup -o checkmember -m $user admin | grep "no")
+  echo "Checking for Administrator removal."
+  if [[ $demoted_check == "no $user is NOT a member of admin" ]]; then
+    echo "$user is not currently an Administrator"
+    osascript -e 'display alert "Account Demoted" message "Your account has been demoted back to Standard.\r If you need additional time as an Administrator, please reach out to ithelpdesk@nomadhealth.com."'
+  else
+    echo "$user is still an Administrator, please try again"
+  fi
+}
+
+config_check
