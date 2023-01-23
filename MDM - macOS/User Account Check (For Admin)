@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# This script checks if the logged in User has an Administrator account. If so, the username and device name is reported.
+# If not, a Standard account is reported.
+
+# Assigns current User to "user" variable.
+user=$(stat -f "%Su" /dev/console)
+# Assigns device name to "device" variable.
+device=$(hostname)
+
+function admin_check {
+  if id -Gn $user | grep -q -w admin;
+    then
+      echo "$user is an Administrator on device $device"
+    else
+      echo "$user has a Standard account"
+    fi
+}
+
+admin_check
