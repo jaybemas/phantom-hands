@@ -3,10 +3,11 @@
 # This script elevates a local Standard account to an Administrator role. It then waits 24 hours (86400 seconds) before
 # demoting the account back to a Standard role.
 
-# Input the local account's name here. This can be found in Mosyle MDM - macOS within the device's information pane.
-username="testuser"
+# Assigns currently logged in User as variable "username".
+username=$(stat -f "%Su" /dev/console)
 
 # Adds the User account to the local admin Group then checks the Group's membership to confirm success and alerts the User.
+
 function elevate_user {
   echo "Elevating $username to Administrator."
   sudo dseditgroup -o edit -a $username -t user admin
@@ -15,6 +16,8 @@ function elevate_user {
   if [[ $elevated_check == "yes $username is a member of admin" ]]; then
     echo "$username is currently an Administrator."
     osascript -e 'display alert "Account Elevated" message "Your account has been elevated to Administrator.\r This will be revoked in 24 hours."'
+    sleep 86400
+    demote_user
   else
     echo "$username is not an Administrator, please try again."
   fi
@@ -33,13 +36,5 @@ function demote_user {
   fi
 }
 
-#
-echo "$(elevate_user)"
 
-sleep 86400
-
-echo "$(demote_user)"
-
-
-
-
+elevate_user
