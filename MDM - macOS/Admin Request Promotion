@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# This script promotes a local Standard account to an Administrator role and notifies with a message on-screen
+
+# Assigns currently logged in User as variable "username".
+username=$(stat -f "%Su" /dev/console)
+
+# Adds the User account to the local Administrator Group then checks the Group's membership to confirm success.
+
+function promote_user {
+  echo "Elevating $username to Administrator."
+  sudo dseditgroup -o edit -a $username -t user admin
+  elevated_check=$(dseditgroup -o checkmember -m $username admin | grep "yes")
+  echo "Checking for Administrator status."
+  if [[ $elevated_check == "yes $username is a member of admin" ]]; then
+    echo "$username is currently an Administrator."
+    osascript -e 'display alert "Admin by request" message "You have been promoted to admin" as critical'
+  else
+    echo "$username is not an Administrator, please try again."
+  fi
+  }
+
+promote_user

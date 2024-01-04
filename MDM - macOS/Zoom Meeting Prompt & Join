@@ -1,0 +1,21 @@
+#!/bin/bash
+
+## This script alerts a User that a Zoom Meeting is beginning soon and prompts them to join the Meeting.
+## If accepted, the script opens Zoom and connects them to the Meeting.
+## If declined, the script exits with no impact.
+
+## Takes the User choice and assigns it to the variable "answer", replace "Your Meeting" with the name of your Meeting.
+answer=$(osascript -e 'Tell application "System Events" to display dialog "Your Meeting is about to begin! Would you like to join the meeting?" with title "Your Meeting starts soon" buttons {"Yes!", "Not yet."} default button "Yes!"' | grep "Yes!")
+
+## Checks the "answer" variable and if "Yes!", opens Zoom and the Meeting link. Otherwise, exits.
+function answer_check {
+  if [[ $answer == "button returned:Yes!" ]]; then
+                     ## Quote your Zoom Meeting link so it looks like the example below
+    open -a zoom.us "https://mydomain.zoom.us/j/645685698?pwd=sdI79WxRZFg3S201ek56S3dxZzgr54QW"
+    exit 0
+  else
+    exit 0
+fi
+}
+
+answer_check

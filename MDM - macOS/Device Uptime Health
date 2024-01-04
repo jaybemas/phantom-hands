@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# This script focuses on device uptime and ensuring a regular restart cadence to promote device functionality.
+
+timeout=10800 # Seconds to restart, equals 3 hours
+
+maxUptime=14 # Maximum allowed uptime, measured in days
+
+
+# A warning to the device that they've hit or surpassed the half-way point for maximum uptime with an option to restart immediately.
+warningPrompt(){
+	promptResponse=$(osascript -e 'display alert "Restart Warning" message "Please restart your Mac soon. It has been online for 7 days without rebooting." buttons {"Restart Now", "Restart Later"} default button "Restart Later"')
+	if [[ "$promptResponse" = "button returned:Restart Now" ]]
+		then
+			echo "User has chosen to restart. Restarting."
+			shutdown -r now
+			exit 0
+    else
+      echo "User has postponed restarting their device."
+    	exit 0
+	fi
+}
+
+# A warning to the device that it's hit the maximum uptime and will restart in $timeout with an option to restart immediately.
+tooLatePrompt(){
+	acknowledgeResponse=$(osascript -e 'display alert "Restarting Your Computer" message "Your Mac has been online for more than the allowed maximum $maxUptime days without rebooting. It will restart in $timeout seconds (3 hours) if a button is not pressed. " buttons {"Restart Now, "Postpone"} default button "Restart Now"')
+    if [[ "$acknowledgeResponse" = "button returned:Restart Now" ]]
+    	then
+    	  echo "User has chosen to immediately restart. Restarting"
+    		shutdown -r now
+    		exit 0
+    elif [[ "$acknowledgeResponse" = "button returned:Postpone" ]]
+      then
+        echo "User has chosen to postpone restart for 3 hours. Timer starts now."
+        sleep timeout
+        echo "Postponement delay lapsed. Restarting."
+        shutdown -r now
+        exit 0
+  fi
+}
+
+
+# Provides uptime in terms of days
+uptimeRaw="$(uptime | grep day)"
+
+if [[ -n "$uptimeRaw" ]]
+then
+    uptimeDays=$(echo "$uptimeRaw" | awk '{print $3}')
+else
+    uptimeDays=0
+fi
+
+echo "Mac uptime: $uptimeDays days."
+echo "Warning days: $((maxUptime/2))"
+echo "Force days: $maxUptime"
+
+if [ $uptimeDays -ge $maxUptime ]
+	then
+		tooLatePrompt		# Forced Reboot
+		exit 0
+elif [ $uptimeDays -ge $((maxUptime/2)) ]
+	then
+		warningPrompt		# Warning
+		exit 0
+else
+	exit 0
+fi

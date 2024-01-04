@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# This script checks for & removes the FreshService Discovery agent from a device.
+# If the FreshService directory exists, the script makes it the working directory.
+# The script then attempts to remove 2 potential blocks to uninstallation before forcing the uninstallation.
+
+# Removes potential blocks & attempts to uninstall FreshService Agent.
+function freshservice_check {
+    echo "FreshService directory found and accessed"
+    sudo rm /tmp/freshservice_agent_status; sudo rm /etc/Freshdesk/Freshservice/accesskey;
+    uninstall_status=$(sudo /usr/local/share/dotnet/dotnet FSAgentService.dll -uninstall_force | echo $?)
+    if [[ $uninstall_status == "0" ]]; then
+      echo "FreshService successfully uninstalled"
+      exit 0
+    else
+      echo "FreshService failed to uninstall, please try again"
+      exit 0
+    fi
+}
+
+# Checks if FreshService directory exists before attempting to uninstall, otherwise confirms FS is not installed.
+# This runs the program and associated functions.
+if [[ -d "/Library/Freshservice-Agent/Freshservice-Discovery-Agent/bin/" ]]; then
+  echo "Accessing FreshService directory"
+  cd /Library/Freshservice-Agent/Freshservice-Discovery-Agent/bin/
+  echo "$(freshservice_check)"
+  exit 0
+else
+  echo "FreshService directory not found, Agent not present"
+  exit 0
+fi

@@ -1,0 +1,20 @@
+ #!/bin/bash
+
+# Demotes a User account after an Admin On-Demand request
+
+username=$(stat -f "%Su" /dev/console)
+
+function demote_user {
+  sudo dseditgroup -o edit -d $username -t user admin
+  demoted_check=$(dseditgroup -o checkmember -m $username admin | grep "no")
+  echo "Checking for Administrator removal."
+  if [[ $demoted_check == "no $username is NOT a member of admin" ]]; then
+    echo "$username is not currently an Administrator"
+    osascript -e 'display alert "Admin by request" message "Your admin session has ended" as critical'
+    sudo killall Terminal user/$(id -u $username)
+  else
+    echo "$username is still an Administrator, please try again"
+  fi
+}
+
+demote_user

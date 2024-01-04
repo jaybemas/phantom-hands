@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# This script checks for expired certificates as a potential break for DEP enrollment.
+# If a certificate is expired, this script will delete the local keychain and prompt the User to restart the device.
+# The DEP enrollment is renewed and verified.
+# This may not be the cause of failure for DEP enrollment so if it fails 2+, try alternative fixes.
+
+
+# Checks if the device is enrolled in DEP and reports or advances the script.
+function check_enrollment {
+	enroll_status=$(profiles status -type enrollment | grep "Enrolled via DEP:")
+	echo "Status: Checking device enrollment"
+	if [[ $enroll_status == "Enrolled via DEP: Yes" ]]; then
+		echo "Device enrolled: Yes"
+		/usr/bin/osascript -e 'Tell application "Self-Service" to display dialog "This device is already enrolled in DEP." with title "Error" with text buttons {"OK"} default button 1 giving up after 15'
+		echo "Status: Exiting"
+		exit 0
+	else
+		echo "Device enrolled: No"
+		echo "$(check_expiration)"
+	fi
+}
+
+# Checks the expiration of certificates in the local keychain and deletes the file if expirations are found.
+# Also kicks off DEP renewal.
+function check_expiration {
+	keychain="/Library/Keychains/apsd.keychain"
+	cert=$(/usr/bin/security find-certificate -p -Z $keychain | /usr/bin/openssl x509 -noout -enddate | cut -f2 -d=)
+	expiration_date=$(/bin/date -j -f "%b %d %T %Y %Z" "$cert" "+%Y%m%d")
+	current_date=$(/bin/date "+%Y%m%d")
+	echo "Status: Checking certificate expiration"
+	if [ $expiration_date -lt $current_date ]; then
+		echo "Certificate expired: Yes"
+		echo "Status: Deleting apsd.keychain"
+		rm $keychain
+		echo "Status: Keychain deleted"
+		echo "Status: Restart required"
+		/usr/bin/osascript -e 'Tell application "Self-Service" to display dialog "An expired certificate needed to be removed.P.\n\nPlease restart your computer and run "Enroll in DEP" again." with title "Restart required" with text buttons {"OK"} default button 1 giving up after 15'
+		echo "Status: Exiting"
+		exit 0
+	else
+		echo "Certificate expired: No"
+	fi
+	echo "$(enroll_in_dep)"
+}
+
+# Attempts to enroll the device via DEP, waits 2 minutes, and verifies enrollment.
+function enroll_in_dep {
+	echo "Status: Enrolling device in DEP"
+	profiles renew -type enrollment
+	sleep 120
+	echo "$(verify_enrollment)"
+}
+
+# Verifies enrollment and returns results.
+function verify_enrollment {
+	enroll_status=$(profiles status -type enrollment | grep "Enrolled via DEP:")
+	echo "Status: Verifying enrollment"
+	if [[ $enroll_status == "Enrolled via DEP: Yes" ]]; then
+		echo "Device enrollment: Successful"
+		/usr/bin/osascript -e 'Tell application "Self-Service" to display dialog "This device is now enrolled in DEP." with title "Success" with text buttons {"OK"} default button 1 giving up after 15'
+	else
+		echo "Device enrollment: Unsuccessful"
+		/usr/bin/osascript -e 'Tell application "Self-Service" to display dialog "There was an error enrolling this device in DEP.\n\nPlease contact IT for assistance." with title "Error" with text buttons {"OK"} default button 1 giving up after 15'
+	fi
+	echo "Status: Finished"
+	exit 0
+}
+
+# Runs program and associated functions.
+echo "$(check_enrollment)"
