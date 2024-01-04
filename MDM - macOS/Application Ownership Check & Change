@@ -1,49 +1,36 @@
 #!/bin/bash
 
-# This script checks the ownership of an application. This can be helpful if troubleshooting the inability to update, remove, or configure an application.
-# If an application is installed / owned by root, a Standard User is unable to act on it.
+# This script will change the ownership of an application to the currently logged-in User. Helpful for when
+# MDM-installed software is causing authorization issues.
 
-# Creates variable for signed-in User
-username=$(stat -f "%Su" /dev/console)
-
-# Creates variable for application name, ie Slack.app - NOTE: The extension is required and so ".app" should not be removed.
+# Target application - Use the text under "Name & Extensions" within Finder -> Get Info
 application="Slack.app"
 
-# Checks if the currently logged in User is the owner
-function ownership_check {
-    current_owner=$(ls -l "/Applications/$application" | awk '{print $3}' | grep $username)
-    if [[ $current_owner == $username ]]; then
-      echo "$application is currently owned by $username."
-      exit 0
+# Full path - Combines the root path and application to create the full path
+fullPath="/Applications/$application"
+
+# Get the current logged-in username
+loggedInUser=$(stat -f %Su /dev/console)
+
+# Get the current owner of the target application
+currentOwner=$(stat -f %Su "$fullPath")
+
+# Check if the current user is the owner
+if [ "$loggedInUser" != "$currentOwner" ]; then
+    echo "Current user is not the owner of $application. Changing ownership..."
+
+    # Use the chown command to change ownership
+    sudo chown -R "$loggedInUser" "$fullPath"
+
+    # Check if chown was successful
+    if [ $? -eq 0 ]; then
+        echo "Ownership changed successfully."
     else
-      echo "Ownership may need to be changed to $username."
-      echo "$(ownership_change)"
+        echo "Error: Failed to change ownership."
+        exit 1
     fi
-}
+else
+    echo "Current user is already the owner of $application. No action needed."
+fi
 
-function ownership_change {
-  if [ -d "/Applications/$application" ] && [ -d "/Users/$username/Applications/$application" ]; then
-    echo "$application is installed at root & local level, it should not require any change."
-    exit 0
-  elif [ -d "/Applications/$application" ]; then
-    echo "$application is installed at root and requires administrator permission to access."
-    echo "Attempting to change owner to $username"
-    sudo chown -R "$username" "/Applications/$application"
-    current_owner=$(ls -l "/Applications/$application" | awk '{print $3}' | grep $username)
-    if [[ $current_owner == $username ]]; then
-        echo "Ownership successfully changed to $username"
-        exit 0
-      else
-        echo "Ownership change failed, please try again."
-        exit 0
-      fi
-  elif [ -d "~/Applications/$application" ]; then
-    echo "$application is installed at local lever, it should not require any change."
-    exit 0
-  else
-    echo "$application is not installed."
-    exit 0
-  fi
-}
-
-ownership_check
+exit 0
