@@ -18,10 +18,10 @@ function falcon_check {
 	fi
 }
 
-# Prompts the User to restart the device in the form of a system warning.
+# Prompts the User to restart the device in the form of a system warning. Remember to replace EMAIL with your team's contact address.
 function restart_prompt {
 	echo "Status: Restart required"
-	osascript -e 'display alert "Critical Error 33" message "Please save your current work and restart your device when convenient.\n\n Seeing this multiple times? Reach out at ithelpdesk@nomadhealth.com"'
+	osascript -e 'display alert "Critical Error 33" message "Please save your current work and restart your device when convenient.\n\n Seeing this multiple times? Reach out at EMAIL"'
 	exit 0
 }
 
