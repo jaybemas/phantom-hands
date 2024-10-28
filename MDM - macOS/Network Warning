@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# This script is meant for a corporate or business environment with a designated employee and guest network.
+# This script checks the connected network and reports if it's connected to the desired network or warns the User via pop-up if they're connected to the guest network.
+# If connected to neither, that is reported and no action is taken. This is to prevent issues for WFH employees.
+
+currentNetwork=$(system_profiler SPAirPortDataType | grep -A 1 "Current Network Information:" | sed -n '2p' | sed 's/^[[:space:]]*//; s/:$//')
+
+# Replace this value with the desired network.
+desiredNetwork="Home_Network"
+
+# Replace this value with the network you want to advise against.
+wrongNetwork="Guest_Network"
+
+if [[ $currentNetwork == $desiredNetwork ]]
+  then
+    echo "This device is connected to $desiredNetwork."
+elif
+  [[ $currentNetwork == $wrongNetwork ]]
+  then
+    echo "This device is connected to $wrongNetwork. Sending warning..."
+    osascript -e 'tell application id "com.apple.systemevents"
+                    activate
+                    display dialog "You are currently on the $wrongNetwork network. For the best connection, please switch to $desiredNetwork." buttons {"Acknowledge"} default button "Acknowledge" with title "Currently on Guest Network"
+                    end tell'
+    echo "Warning sent."
+else
+  echo "This device is connected neither to $desiredNetwork or $wrongNetwork."
+fi
