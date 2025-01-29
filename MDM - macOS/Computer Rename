@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This script sets the device's ComputerName to a standardized {userName}-{serialNumber} format.
+
+# Sets the variable of the currently logged-in user.
+userName=$(stat -f "%Su" /dev/console)
+
+# Sets the variable of the device's serial number.
+serialNumber=$(system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+
+# Sets the variable of the device's current Computer Name.
+currentName=$(scutil --get ComputerName)
+
+# Sets the variable of the device's new standardized name.
+newName=$userName-$serialNumber
+
+# Logic to compare the currentName and newName variables and either report results or take action.
+if [[ "$currentName" == "$newName" ]];
+  then
+    echo "Computer Name correctly set as $newName"
+else
+    echo "Computer Name currently $currentName, changing..."
+    sudo /usr/sbin/scutil --set ComputerName "$newName"
+    echo "Computer Name successfully changed to $newName"
+fi
