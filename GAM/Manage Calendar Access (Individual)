@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# This is the path to your GAM installation and should be adjusted if changed from default.
+gam="$HOME/bin/gamadv-xtd3/gam"
+
+# Function to grant a user access to a specific calendar, in email form
+function grantAccess {
+  read -p "Calendar to access, in email form: " calendarAccess
+  read -p "Who should have access, in email form: " requester
+  $gam calendar $calendarAccess add $role $requester
+}
+
+# Function to remove a user from a specific calendar, in email form
+function removeAccess {
+  read -p "Calendar to remove, in email form: " calendarAccess
+  read -p "Who to remove, in email form: " requester
+  $gam calendar $calendarAccess delete reader $requester
+  $gam calendar $calendarAccess delete editor $requester
+  $gam calendar $calendarAccess delete owner $requester
+}
+
+# Function selection
+PS3="Grant Access or Remove Access? "
+options=("Grant" "Remove")
+
+select option in "${options[@]}"; do
+	case $option in
+	  "Grant")
+	  PS3="Select Access Type "
+    options=("Read" "Edit" "Owner")
+    select option in "${options[@]}"; do
+	    case $option in
+	    "Read")
+      role="reader"
+      grantAccess
+	    break
+	    ;;
+	    "Edit")
+      role="editor"
+      grantAccess
+	    break
+	    ;;
+	    "Owner")
+      role="owner"
+      grantAccess
+	    break
+	    ;;
+	  esac
+  done
+  break
+  ;;
+	"Remove")
+  removeAccess
+  break
+  ;;
+	esac
+done
+
+
+
