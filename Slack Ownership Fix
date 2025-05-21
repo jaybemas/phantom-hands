@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Script that reads the owner of Slack and changes it to the currently logged in user, if applicable
+# It also enables read/write for other users so that MDM can continue to make changes
+
+# Sets variables for logged in user and current Slack owner
+userName=$(stat -f "%Su" /dev/console)
+slackOwner=$(ls -l /Applications/Slack.app | awk '{printf "%s", $3}'; echo)
+
+# Reports information for troubleshooting
+echo "Current console user: $userName"
+echo "Current Slack owner: $slackOwner"
+
+if [[ "$userName" == "$slackOwner" ]];
+  then
+    echo "Slack already owned by $userName"
+  else
+    sudo chown -R $userName /Applications/Slack.app
+    sudo chmod -R 775 /Applications/Slack.app
+    newSlackOwner=$(ls -l /Applications/Slack.app | awk '{printf "%s", $3}'; echo)
+    if [[ "$userName" == "newSlackOwner" ]];
+      then
+      echo "Slack now owned by $userName"
+    else
+      echo "Slack still owned by $newSlackOwner"
+    fi
+fi
